@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Образы{% endblock %}
+{% block content %}
+<div class="page-title">
+    <div>
+        <p class="eyebrow">Комплекты одежды</p>
+        <h1>Сохранённые образы</h1>
+    </div>
+    <a href="{{ url_for('outfit_new') }}" class="button">Создать образ</a>
+</div>
+
+{% if outfits %}
+    <section class="panel outfit-list-panel">
+        <div class="outfit-list">
+            {% for outfit in outfits %}
+                <article class="outfit-row">
+                    <a class="outfit-row-preview" href="{{ url_for('outfit_export', outfit_id=outfit.id) }}" title="Скачать коллаж образа">
+                        <img src="{{ url_for('outfit_image', outfit_id=outfit.id) }}" alt="Превью образа {{ outfit.name }}">
+                    </a>
+                    <div class="outfit-row-body">
+                        <h2>{{ outfit.name }}</h2>
+                        <p class="muted">{{ outfit.items|length }} предмет(ов)</p>
+                    </div>
+                    <div class="outfit-row-actions">
+                        <a class="button ghost" href="{{ url_for('outfit_edit', outfit_id=outfit.id) }}">Редактировать</a>
+                        <a class="button ghost" href="{{ url_for('outfit_export', outfit_id=outfit.id) }}">Скачать коллаж</a>
+                        <form method="post" action="{{ url_for('outfit_delete', outfit_id=outfit.id) }}" onsubmit="return confirm('Удалить образ?')">
+                            <button class="link-danger" type="submit">Удалить</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% else %}
+    <div class="empty-state">
+        <h2>Сохранённых образов пока нет</h2>
+        <p>Создайте комплект из предметов, добавленных в гардероб.</p>
+        <a href="{{ url_for('outfit_new') }}" class="button">Создать образ</a>
+    </div>
+{% endif %}
+{% endblock %}

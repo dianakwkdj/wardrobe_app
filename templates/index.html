@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}WebWardrobe — личный гардероб{% endblock %}
+{% block content %}
+<section class="hero hero-single">
+    <div>
+        <p class="eyebrow">Курсовой проект</p>
+        <h1>Веб-приложение для управления личным гардеробом</h1>
+        <p class="lead">Добавляйте предметы одежды, систематизируйте их по категориям, составляйте пользовательские образы и экспортируйте готовые комплекты в виде изображения.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('register') }}" class="button large">Создать аккаунт</a>
+            <a href="{{ url_for('login') }}" class="button ghost large">Войти</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

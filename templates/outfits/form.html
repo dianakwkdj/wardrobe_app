@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{% if outfit %}Редактирование образа{% else %}Создание образа{% endif %}{% endblock %}
+{% block content %}
+<div class="page-title">
+    <div>
+        <p class="eyebrow">Образы</p>
+        <h1>{% if outfit %}Редактирование образа{% else %}Создание образа{% endif %}</h1>
+    </div>
+    <a href="{{ url_for('outfits') }}" class="button ghost">Назад</a>
+</div>
+
+<form method="post" class="form panel outfit-builder-form" id="outfit-builder-form">
+    <section class="live-preview-wrap">
+        <div class="live-collage" id="live-collage">
+            {% for group in item_groups %}
+                <div class="collage-slot slot-{{ group['id'] }}" data-slot="{{ group['id'] }}" aria-label="{{ group['title'] }}">
+                    <button type="button" class="slot-replace" data-target-slot="{{ group['id'] }}" title="Заменить элемент">↺</button>
+                    <div class="slot-placeholder">{{ group['title'] }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="form-row">
+        <label>Название образа
+            <input type="text" name="name" value="{{ form_values.name }}" placeholder="Например, базовый образ">
+        </label>
+        <label>Сезон
+            <select name="season">
+                <option value="">Не указан</option>
+                {% for season in seasons %}
+                    <option value="{{ season }}" {% if form_values.season == season %}selected{% endif %}>{{ season }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+
+    <section class="generator-panel clean-generator">
+        <h2>Автоподбор образа</h2>
+        <fieldset class="wheel-fieldset center-wheel">
+            <legend>Любимый цвет</legend>
+            <input type="hidden" name="favorite_color" value="{{ form_values.favorite_color or '' }}" data-wheel-input>
+            <div class="color-wheel-svg-wrap" data-wheel data-empty-label="Любой цвет">
+                <svg class="color-wheel-svg" viewBox="0 0 300 300" role="img" aria-label="Цветовой круг">
+                    {% for swatch in color_wheel %}
+                        <path class="wheel-segment {{ swatch.ring }}"
+                              d="{{ swatch.path }}"
+                              fill="{{ swatch.hex }}"
+                              data-color="{{ swatch.value }}"
+                              data-label="{{ swatch.label }}">
+                            <title>{{ swatch.label }}</title>
+                        </path>
+                    {% endfor %}
+                    <circle class="wheel-center-choice" cx="150" cy="150" r="31" data-color="" data-label="Любой цвет">
+                        <title>Любой цвет</title>
+                    </circle>
+                    <text class="wheel-center-text" x="150" y="159">×</text>
+                </svg>
+            </div>
+            <div class="wheel-current" data-wheel-current>{{ form_values.favorite_color or 'Любой цвет' }}</div>
+        </fieldset>
+        <button class="button generator-button" type="submit" name="action" value="generate">Сгенерировать образ</button>
+    </section>
+
+    <h2>Элементы гардероба</h2>
+    {% if items %}
+        <div class="slot-groups">
+            {% for group in item_groups %}
+                <section class="slot-group panel" id="slot-group-{{ group['id'] }}">
+                    <div class="slot-group-header">
+                        <div>
+                            <h3>{{ group['title'] }}</h3>
+                            <p class="muted">{{ group['anchor'] }}</p>
+                        </div>
+                    </div>
+                    {% if group['items'] %}
+                        <div class="select-grid grouped-select-grid">
+                            {% for item in group['items'] %}
+                                <label class="select-card slot-select-card">
+                                    <input
+                                        type="checkbox"
+                                        name="item_ids"
+                                        value="{{ item.id }}"
+                                        data-slot="{{ group['id'] }}"
+                                        data-image="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}"
+                                        data-name="{{ item.name }}"
+                                        data-category="{{ item.category.name }}"
+                                        {% if item.id in selected_ids %}checked{% endif %}
+                                    >
+                                    <img src="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}" alt="{{ item.name }}">
+                                    <span>{{ item.name }}</span>
+                                    <small>{{ item.category.name }} · {{ item.color or 'цвет не указан' }}</small>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state compact">
+                            <p>В этой группе пока нет вещей.</p>
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        </div>
+        <div class="form-actions-row">
+            <button class="button" type="submit" name="action" value="save">Сохранить образ</button>
+            <button class="button ghost" type="submit" name="action" value="save_export">Сохранить и скачать коллаж</button>
+            {% if outfit %}
+                <a class="button ghost" href="{{ url_for('outfit_export', outfit_id=outfit.id) }}">Скачать текущий коллаж</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="empty-state compact">
+            <p>Для создания образа сначала добавьте предметы в гардероб.</p>
+            <a href="{{ url_for('wardrobe_new') }}" class="button">Добавить одежду</a>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/color-wheel.js') }}"></script>
+<script>
+(function() {
+    const checkboxes = Array.from(document.querySelectorAll('.slot-select-card input[type="checkbox"]'));
+    const slots = Array.from(document.querySelectorAll('.collage-slot'));
+    const replaceButtons = Array.from(document.querySelectorAll('.slot-replace'));
+
+    function clearSlot(slotEl) {
+        slotEl.querySelectorAll('.preview-item').forEach(node => node.remove());
+        const placeholder = slotEl.querySelector('.slot-placeholder');
+        if (placeholder) placeholder.style.display = 'block';
+    }
+
+    function renderCollage() {
+        slots.forEach(clearSlot);
+        const bySlot = {};
+        checkboxes.filter(cb => cb.checked).forEach(cb => {
+            const slot = cb.dataset.slot;
+            if (!bySlot[slot]) bySlot[slot] = [];
+            bySlot[slot].push(cb);
+        });
+
+        slots.forEach(slotEl => {
+            const slotId = slotEl.dataset.slot;
+            const selected = bySlot[slotId] || [];
+            if (!selected.length) return;
+            const placeholder = slotEl.querySelector('.slot-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            selected.slice(0, 2).forEach((cb, index) => {
+                const img = document.createElement('img');
+                img.className = 'preview-item';
+                if (selected.length > 1) img.classList.add(index === 0 ? 'stack-left' : 'stack-right');
+                img.src = cb.dataset.image;
+                img.alt = cb.dataset.name;
+                slotEl.appendChild(img);
+            });
+        });
+    }
+
+    function enforceSinglePerSlot(changed) {
+        if (!changed.checked) return;
+        checkboxes.forEach(cb => {
+            if (cb !== changed && cb.dataset.slot === changed.dataset.slot) {
+                cb.checked = false;
+            }
+        });
+        if (changed.dataset.category === 'Платья') {
+            checkboxes.forEach(cb => {
+                if (cb.dataset.slot === 'bottom') cb.checked = false;
+            });
+        }
+        if (changed.dataset.slot === 'bottom') {
+            checkboxes.forEach(cb => {
+                if (cb.dataset.category === 'Платья') cb.checked = false;
+            });
+        }
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', function() {
+        enforceSinglePerSlot(this);
+        renderCollage();
+    }));
+
+    replaceButtons.forEach(btn => btn.addEventListener('click', function() {
+        const target = document.getElementById('slot-group-' + this.dataset.targetSlot);
+        if (!target) return;
+        target.scrollIntoView({behavior: 'smooth', block: 'start'});
+        target.classList.add('slot-focus');
+        setTimeout(() => target.classList.remove('slot-focus'), 1300);
+    }));
+
+    renderCollage();
+})();
+</script>
+{% endblock %}

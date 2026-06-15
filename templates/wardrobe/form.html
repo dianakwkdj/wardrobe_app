@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{% if item %}Редактирование{% else %}Добавление одежды{% endif %}{% endblock %}
+{% block content %}
+{% set selected_color = request.form.get('color') if request.method == 'POST' else (item.color if item else '') %}
+<div class="page-title">
+    <div>
+        <p class="eyebrow">Гардероб</p>
+        <h1>{% if item %}Редактирование предмета{% else %}Добавление одежды{% endif %}</h1>
+    </div>
+    <a href="{{ url_for('wardrobe') }}" class="button ghost">Назад</a>
+</div>
+
+<section class="form-layout">
+    <div class="preview-card upload-preview-card">
+        {% if item %}
+            <img src="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}" alt="{{ item.name }}">
+            <h2>{{ item.name }}</h2>
+        {% else %}
+            <div class="upload-placeholder">
+                <span>Фото</span>
+                <strong>Загрузить изображение</strong>
+            </div>
+        {% endif %}
+    </div>
+    <form method="post" enctype="multipart/form-data" class="form panel">
+        <label>Название
+            <input type="text" name="name" required value="{{ request.form.get('name') if request.method == 'POST' else (item.name if item else '') }}">
+        </label>
+        <label>Категория
+            <select name="category_id" required>
+                <option value="">Выберите категорию</option>
+                {% for category in categories %}
+                    {% set current_category_id = (request.form.get('category_id')|int) if request.method == 'POST' else (item.category_id if item else None) %}
+                    <option value="{{ category.id }}" {% if current_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <fieldset class="wheel-fieldset">
+            <legend>Цвет</legend>
+            <input type="hidden" name="color" value="{{ selected_color or '' }}" data-wheel-input>
+            <div class="color-wheel-svg-wrap" data-wheel data-empty-label="Цвет не указан">
+                <svg class="color-wheel-svg small-wheel" viewBox="0 0 300 300" role="img" aria-label="Цветовой круг">
+                    {% for swatch in color_wheel %}
+                        <path class="wheel-segment {{ swatch.ring }}"
+                              d="{{ swatch.path }}"
+                              fill="{{ swatch.hex }}"
+                              data-color="{{ swatch.value }}"
+                              data-label="{{ swatch.label }}">
+                            <title>{{ swatch.label }}</title>
+                        </path>
+                    {% endfor %}
+                    <circle class="wheel-center-choice" cx="150" cy="150" r="31" data-color="" data-label="Цвет не указан">
+                        <title>Не указан</title>
+                    </circle>
+                    <text class="wheel-center-text" x="150" y="159">×</text>
+                </svg>
+            </div>
+            <div class="wheel-current" data-wheel-current>{{ selected_color or 'Цвет не указан' }}</div>
+        </fieldset>
+
+        <label>Сезон
+            {% set selected_season = request.form.get('season') if request.method == 'POST' else (item.season if item else '') %}
+            <select name="season">
+                <option value="">Не указан</option>
+                {% for season in seasons %}
+                    <option value="{{ season }}" {% if selected_season == season %}selected{% endif %}>{{ season }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>{% if item %}Новое изображение{% else %}Изображение{% endif %}
+            <input type="file" name="image" accept="image/png,image/jpeg,image/webp" {% if not item %}required{% endif %}>
+        </label>
+        <button class="button full" type="submit">Сохранить</button>
+    </form>
+</section>
+
+{% if item %}
+<form method="post" action="{{ url_for('wardrobe_delete', item_id=item.id) }}" class="delete-form" onsubmit="return confirm('Удалить предмет одежды?')">
+    <button class="button danger" type="submit">Удалить предмет</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/color-wheel.js') }}"></script>
+{% endblock %}

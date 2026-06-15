@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Гардероб{% endblock %}
+{% block content %}
+<div class="page-title">
+    <div>
+        <p class="eyebrow">Личный каталог</p>
+        <h1>Гардероб</h1>
+    </div>
+    <a href="{{ url_for('wardrobe_new') }}" class="button">Добавить вещь</a>
+</div>
+
+<form class="filters wardrobe-filters" method="get">
+    <input type="text" name="search" placeholder="Поиск" value="{{ filters.search }}">
+    <select name="category_id">
+        <option value="">Все категории</option>
+        {% for category in categories %}
+            <option value="{{ category.id }}" {% if filters.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+    </select>
+    <select name="season">
+        <option value="">Все сезоны</option>
+        {% for season in seasons %}
+            <option value="{{ season }}" {% if filters.season == season %}selected{% endif %}>{{ season }}</option>
+        {% endfor %}
+    </select>
+    <button class="button" type="submit">Фильтровать</button>
+
+    <fieldset class="wheel-fieldset filter-wheel-fieldset">
+        <legend>Цвет</legend>
+        <input type="hidden" name="color" value="{{ filters.color or '' }}" data-wheel-input>
+        <div class="color-wheel-svg-wrap" data-wheel data-empty-label="Все цвета">
+            <svg class="color-wheel-svg tiny-wheel" viewBox="0 0 300 300" role="img" aria-label="Цветовой круг">
+                {% for swatch in color_wheel %}
+                    <path class="wheel-segment {{ swatch.ring }}"
+                          d="{{ swatch.path }}"
+                          fill="{{ swatch.hex }}"
+                          data-color="{{ swatch.value }}"
+                          data-label="{{ swatch.label }}">
+                        <title>{{ swatch.label }}</title>
+                    </path>
+                {% endfor %}
+                <circle class="wheel-center-choice" cx="150" cy="150" r="31" data-color="" data-label="Все цвета">
+                    <title>Все цвета</title>
+                </circle>
+                <text class="wheel-center-text" x="150" y="159">×</text>
+            </svg>
+        </div>
+        <div class="wheel-current" data-wheel-current>{{ filters.color or 'Все цвета' }}</div>
+    </fieldset>
+</form>
+
+{% if items %}
+    <section class="panel wardrobe-table-panel">
+        <table class="table wardrobe-table">
+            <thead>
+                <tr>
+                    <th>Фото</th>
+                    <th>Название</th>
+                    <th>Категория</th>
+                    <th>Цвет</th>
+                    <th>Сезон</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td><img class="table-thumb" src="{{ url_for('static', filename='uploads/' ~ item.image_filename) }}" alt="{{ item.name }}"></td>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>{{ item.category.name }}</td>
+                        <td>{{ item.color or '—' }}</td>
+                        <td>{{ item.season or '—' }}</td>
+                        <td>
+                            <div class="actions compact-actions">
+                                <a class="button ghost" href="{{ url_for('wardrobe_edit', item_id=item.id) }}">Редактировать</a>
+                                <a class="button ghost" href="{{ url_for('wardrobe_download', item_id=item.id) }}">Скачать</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% else %}
+    <div class="empty-state">
+        <h2>В гардеробе пока нет элементов</h2>
+        <p>Добавьте первый предмет одежды, чтобы начать создавать образы.</p>
+        <a href="{{ url_for('wardrobe_new') }}" class="button">Добавить вещь</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/color-wheel.js') }}"></script>
+{% endblock %}

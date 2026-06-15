@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Администрирование{% endblock %}
+{% block content %}
+<div class="page-title">
+    <div>
+        <p class="eyebrow">Роль: admin</p>
+        <h1>Панель администратора</h1>
+    </div>
+</div>
+
+<section class="panel">
+    <h2>Данные системы</h2>
+    <div class="stats-grid">
+        <div><strong>{{ stats.users }}</strong><span>пользователей</span></div>
+        <div><strong>{{ stats.categories }}</strong><span>категорий</span></div>
+        <div><strong>{{ stats.clothes }}</strong><span>предметов одежды</span></div>
+        <div><strong>{{ stats.outfits }}</strong><span>образов</span></div>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Управление пользователями</h2>
+    <table class="table admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Логин</th>
+                <th>Email</th>
+                <th>Роль</th>
+                <th>Одежда</th>
+                <th>Образы</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_user_role', user_id=user.id) }}" class="inline-form">
+                            <select name="role">
+                                <option value="user" {% if user.role == 'user' %}selected{% endif %}>user</option>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+                            </select>
+                            <button class="button ghost" type="submit">OK</button>
+                        </form>
+                    </td>
+                    <td>{{ user.clothes|length }}</td>
+                    <td>{{ user.outfits|length }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_user_delete', user_id=user.id) }}" onsubmit="return confirm('Удалить пользователя и его данные?')">
+                            <button class="link-danger" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <h2>Управление категориями одежды</h2>
+    <form method="post" action="{{ url_for('admin_category_add') }}" class="inline-form add-category-form">
+        <input type="text" name="name" placeholder="Новая категория">
+        <button class="button" type="submit">Добавить</button>
+    </form>
+
+    <table class="table admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Предметов</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_category_edit', category_id=category.id) }}" class="inline-form">
+                            <input type="text" name="name" value="{{ category.name }}">
+                            <button class="button ghost" type="submit">Сохранить</button>
+                        </form>
+                    </td>
+                    <td>{{ category.clothes|length }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_category_delete', category_id=category.id) }}" onsubmit="return confirm('Удалить категорию?')">
+                            <button class="link-danger" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <h2>Модерация данных</h2>
+    <h3>Последние предметы одежды</h3>
+    <table class="table admin-table">
+        <thead>
+            <tr><th>ID</th><th>Пользователь</th><th>Название</th><th>Категория</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+            {% for item in clothes %}
+                <tr>
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.user.username }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category.name }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_clothing_delete', item_id=item.id) }}" onsubmit="return confirm('Удалить предмет одежды?')">
+                            <button class="link-danger" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Последние образы</h3>
+    <table class="table admin-table">
+        <thead>
+            <tr><th>ID</th><th>Пользователь</th><th>Название</th><th>Предметов</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+            {% for outfit in outfits %}
+                <tr>
+                    <td>{{ outfit.id }}</td>
+                    <td>{{ outfit.user.username }}</td>
+                    <td>{{ outfit.name }}</td>
+                    <td>{{ outfit.items|length }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_outfit_delete', outfit_id=outfit.id) }}" onsubmit="return confirm('Удалить образ?')">
+                            <button class="link-danger" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
